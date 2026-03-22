@@ -1,0 +1,85 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          cache-dependency-path: extension/package-lock.json
+
+      - name: Install dependencies
+        working-directory: extension
+        run: npm ci
+
+      - name: Build
+        working-directory: extension
+        run: npm run build
+
+      - name: Build tests
+        working-directory: extension
+        run: npx tsc -p src/test/tsconfig.test.json
+
+      - name: Run tests
+        working-directory: extension
+        run: npm test
+
+  package:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: 'npm'
+          cache-dependency-path: extension/package-lock.json
+
+      - name: Install dependencies
+        working-directory: extension
+        run: npm ci
+
+      - name: Build
+        working-directory: extension
+        run: npm run build
+
+      - name: Build tests
+        working-directory: extension
+        run: npx tsc -p src/test/tsconfig.test.json
+
+      - name: Run tests
+        working-directory: extension
+        run: npm test
+
+      - name: Package extension
+        working-directory: extension
+        run: npx @vscode/vsce package --no-dependencies
+
+      - name: Upload VSIX artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: gradril-vsix
+          path: extension/*.vsix
+          retention-days: 30

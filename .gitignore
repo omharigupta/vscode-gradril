@@ -1,0 +1,32 @@
+
+
+# Ignore vscode AI rules
+.github/instructions/codacy.instructions.md
+
+# Dependencies
+node_modules/
+extension/node_modules/
+
+# Build output
+extension/dist/
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# WhatsApp saved pages (not project files)
+\(60\) WhatsApp.html
+\(60\) WhatsApp_files/
+
+# Audit logs (contain hashed user data)
+.gradril/
+
+# VS Code local settings
+.vscode/
+
+# Package output
+*.vsix
+
+
+#Ignore vscode AI rules
+.github\instructions\codacy.instructions.md

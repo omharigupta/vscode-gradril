@@ -1,0 +1,164 @@
+{
+  "name": "gradril",
+  "displayName": "Gradril — Copilot Prompt Guardrail",
+  "description": "Security extension that validates, sanitizes, and guards prompts before they reach Copilot AI. Prevents credential leaks, PII exposure, prompt injection, and jailbreak attempts.",
+  "version": "1.0.0",
+  "publisher": "gradril",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "icon": "media/icon.svg",
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "ai",
+    "security",
+    "guardrails",
+    "copilot",
+    "pii",
+    "secrets",
+    "prompt-injection",
+    "jailbreak"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "chatParticipants": [
+      {
+        "id": "gradril.guard",
+        "name": "gradril",
+        "fullName": "Gradril Security Guard",
+        "description": "Secure AI assistant — validates prompts before sending to Copilot",
+        "isSticky": true,
+        "commands": [
+          {
+            "name": "scan",
+            "description": "Scan a prompt for security risks without sending to AI"
+          },
+          {
+            "name": "status",
+            "description": "Show guard status and session statistics"
+          },
+          {
+            "name": "config",
+            "description": "Open Gradril settings"
+          }
+        ],
+        "disambiguation": [
+          {
+            "category": "security",
+            "description": "The user wants to send a prompt through security validation before it reaches AI",
+            "examples": [
+              "Check this code for secrets before sending to AI",
+              "Scan my prompt for sensitive data",
+              "I want to safely ask Copilot a question",
+              "Validate my prompt for PII leaks"
+            ]
+          }
+        ]
+      }
+    ],
+    "commands": [
+      {
+        "command": "gradril.toggleGuard",
+        "title": "Gradril: Toggle Guard"
+      },
+      {
+        "command": "gradril.openAuditLog",
+        "title": "Gradril: Open Audit Log"
+      },
+      {
+        "command": "gradril.testConnection",
+        "title": "Gradril: Test Backend Connection"
+      }
+    ],
+    "configuration": {
+      "title": "Gradril",
+      "properties": {
+        "gradril.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable or disable the Gradril prompt guardrail."
+        },
+        "gradril.backendUrl": {
+          "type": "string",
+          "default": "http://localhost:8000",
+          "description": "URL of the Guardrails AI backend server."
+        },
+        "gradril.backendEnabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Whether to call the backend Guardrails AI server for deep ML validation."
+        },
+        "gradril.backendTimeout": {
+          "type": "number",
+          "default": 2000,
+          "minimum": 100,
+          "maximum": 10000,
+          "description": "Backend request timeout in milliseconds. Falls back to local-only on timeout."
+        },
+        "gradril.sanitizeThreshold": {
+          "type": "number",
+          "default": 0.3,
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Risk score threshold above which prompts are sanitized (0-1)."
+        },
+        "gradril.enabledValidators": {
+          "type": "array",
+          "default": [
+            "pii",
+            "secrets",
+            "injection",
+            "jailbreak",
+            "toxicity"
+          ],
+          "items": {
+            "type": "string",
+            "enum": [
+              "pii",
+              "secrets",
+              "injection",
+              "jailbreak",
+              "toxicity"
+            ]
+          },
+          "description": "List of active validators."
+        },
+        "gradril.customBlocklist": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "description": "Additional terms or patterns to block in prompts."
+        },
+        "gradril.auditLogEnabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable local audit logging of prompt decisions (hashes only, never raw text)."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run build",
+    "build": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "package": "vsce package --no-dependencies"
+  },
+  "devDependencies": {
+    "@types/node": "^18.19.0",
+    "@types/vscode": "^1.90.0",
+    "@vscode/vsce": "^2.26.0",
+    "typescript": "^5.4.0"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gradril/gradril"
+  }
+}

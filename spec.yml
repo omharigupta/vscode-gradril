@@ -1,0 +1,88 @@
+system: Gradril — Copilot Prompt Guardrail System
+version: 1.0.0
+type: Pre-LLM & Post-LLM Validation Layer
+
+input:
+  type: user_prompt
+  source: VS Code Chat Panel (@gradril participant)
+
+processing:
+  input_pipeline:
+    - interception (Chat Participant API)
+    - local_validation (regex-based, 5 validators)
+    - backend_validation (Guardrails AI ML, optional)
+    - risk_scoring (weighted multi-signal)
+    - sanitization (mask / strip)
+    - decision (ALLOW / SANITIZE / BLOCK)
+  output_pipeline:
+    - llm_response_capture
+    - backend_output_guard (hallucination, bias, toxicity, PII)
+    - color_coded_feedback_rendering
+
+output:
+  input_guard: safe_prompt OR sanitized_prompt (never blocked)
+  output_guard: hallucination_analysis with confidence scores
+
+actions:
+  allow: pass prompt to Copilot, append verified footer
+  sanitize: mask/strip findings, forward modified prompt, show before→after redactions
+  # NOTE: Gradril never blocks — all detected items are masked and the prompt is always forwarded
+
+validators:
+  local:
+    - pii_detector (SSN, email, phone, credit card, IP, passport, DOB)
+    - secret_detector (AWS keys, GitHub/GitLab tokens, JWT, API keys, Stripe, Slack, Azure, npm, private keys, passwords)
+    - injection_detector (instruction override, role hijack, prompt extraction, delimiter injection, restriction removal)
+    - jailbreak_detector (DAN, developer mode, hypothetical framing, roleplay, base64/unicode evasion)
+    - toxicity_detector (violence, harassment, self-harm, illegal, explicit, custom blocklist)
+  backend_input:
+    - DetectPII (Presidio-based, on_fail=fix)
+    - ToxicLanguage (ML classifier, on_fail=exception)
+    - DetectJailbreak (ML pattern recognition, on_fail=exception)
+    - SecretsPresent (rule+ML hybrid, on_fail=fix)
+    - UnusualPrompt (LLM trickery detection, on_fail=noop)
+  backend_output:
+    - GroundedAIHallucination (ML-based, on_fail=noop)
+    - BiasCheck (ML classifier, on_fail=noop)
+    - ToxicLanguage (defense-in-depth, on_fail=exception)
+    - DetectPII (training data leak prevention, on_fail=fix)
+
+sanitization:
+  - mask PII with typed placeholders ([EMAIL_REDACTED], [SSN_REDACTED])
+  - mask secrets with typed placeholders ([AWS_KEY_REDACTED])
+  - strip malicious injection phrases, preserve legitimate questions
+  - color-coded before→after display (🔴 ~~masked~~ → 🟢 replacement)
+
+risk_scoring:
+  weights:
+    pii: 0.25
+    secrets: 0.30
+    injection: 0.25
+    jailbreak: 0.25
+    toxicity: 0.20
+  thresholds:
+    sanitize: 0.3 (below this → ALLOW, above this → SANITIZE)
+  policy: Never block — always mask detected items and forward to LLM
+  critical_handling: Critical findings are masked with extra warnings shown to user
+
+feedback_ui:
+  detection_display:
+    - grouped findings by category (🔑 Secrets, 👤 PII, 💉 Injection, 🔓 Jailbreak, ☠️ Toxicity)
+    - severity icons (🔴 critical, 🟠 high, 🟡 medium, 🟢 low)
+    - masked detected values (AKIA••••CDEF, jo••@example.com, 123-••-••••)
+    - confidence percentages per finding
+    - visual risk bar (🟥🟥🟥🟥🟥🟥⬜⬜⬜⬜ 60%)
+  hallucination_display:
+    - sentence-level analysis with confidence scores
+    - color-coded badges (✅ Grounded, ⚠️ Uncertain, 🔴 Hallucinated)
+    - confidence bars per sentence
+
+logging:
+  - SHA-256 hashed audit entries (never raw prompt text)
+  - .gradril/audit.jsonl local storage
+  - structured JSON with timestamp, decision, risk score, findings count
+
+integration:
+  - VS Code Extension (Chat Participant API, ^1.90.0)
+  - GitHub Copilot (via @gradril chat participant)
+  - Guardrails AI Backend (self-hosted, open source Apache 2.0, localhost:8000)

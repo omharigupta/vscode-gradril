@@ -1,0 +1,146 @@
+project_name: Gradril — VS Code Copilot Guardrail Extension
+version: 1.0.0
+
+objective:
+  Build a VS Code extension that intercepts user prompts before sending them
+  to GitHub Copilot, validates them using local regex validators and an optional
+  Guardrails AI ML backend, sanitizes or blocks unsafe prompts, and provides
+  rich color-coded feedback including masked detected values and hallucination
+  analysis on LLM output.
+
+scope:
+  - Intercept prompt via VS Code Chat Participant API (@gradril)
+  - Validate prompt locally (regex) and optionally via backend (ML)
+  - Score risk using weighted multi-signal engine
+  - Sanitize or block based on configurable thresholds
+  - Forward safe/sanitized prompts to Copilot
+  - Capture LLM output and run output guard (hallucination, bias)
+  - Display rich grouped feedback with masked detected values
+  - Log decisions with SHA-256 hashed audit entries
+
+functional_requirements:
+
+  - FR1: Prompt Interception
+    description: Capture user prompt via Chat Participant API before it is sent to Copilot
+    mechanism: vscode.chat.createChatParticipant('gradril.guard')
+
+  - FR2: Input Validation — Local
+    description: Validate prompt using 5 local regex-based validators
+    checks:
+      - PII detection (SSN, email, phone, credit card, IP, passport, DOB)
+      - Secret detection (AWS keys, GitHub/GitLab tokens, JWT, API keys, Stripe, Slack, Azure, npm, private keys, passwords, connection strings)
+      - Prompt injection detection (instruction override, role hijack, prompt extraction, delimiter injection, restriction removal)
+      - Jailbreak detection (named jailbreaks/DAN, developer mode, hypothetical framing, roleplay escalation, base64 evasion, unicode obfuscation)
+      - Toxicity detection (violence, harassment, self-harm, illegal activity, explicit content, custom blocklist)
+
+  - FR3: Input Validation — Backend (Optional)
+    description: Send prompt to self-hosted Guardrails AI backend for ML-powered validation
+    backend_validators:
+      - DetectPII (Microsoft Presidio-based)
+      - ToxicLanguage (ML classifier)
+      - DetectJailbreak (ML pattern recognition)
+      - SecretsPresent (rule + ML hybrid)
+      - UnusualPrompt (LLM trickery detection)
+    fallback: Gracefully degrades to local-only validation when backend unavailable
+
+  - FR4: Prompt Sanitization
+    description: Modify unsafe prompt while preserving intent
+    actions:
+      - Mask PII with typed placeholders ([EMAIL_REDACTED], [SSN_REDACTED])
+      - Mask secrets with typed placeholders ([AWS_KEY_REDACTED], [GITHUB_TOKEN_REDACTED])
+      - Strip injection phrases while preserving legitimate question content
+    display:
+      - Color-coded before→after (🔴 ~~masked~~ → 🟢 replacement)
+
+  - FR5: Decision Engine
+    description: Risk-based decision using weighted scoring
+    algorithm: Weighted risk scorer with severity-aware warnings
+    thresholds:
+      sanitize: 0.3 (configurable)
+    policy: Never block — all detected items are masked and the prompt is always forwarded to the LLM
+    outcomes: ALLOW, SANITIZE
+    critical_handling: Critical findings trigger extra visual warnings but are still masked and forwarded
+
+  - FR6: Output Guard — Hallucination Detection
+    description: Analyze LLM responses for hallucinations using Guardrails AI backend
+    method: Backend-only (GroundedAIHallucination ML model)
+    display:
+      - Sentence-level analysis with confidence scores
+      - Color-coded badges (✅ Grounded, ⚠️ Uncertain, 🔴 Hallucinated)
+      - Confidence bars per sentence
+    fallback: Shows "unavailable" result when backend is offline
+
+  - FR7: Output Guard — Additional Checks
+    description: Additional output validation via backend
+    checks:
+      - BiasCheck (ML classifier)
+      - ToxicLanguage (defense-in-depth)
+      - DetectPII (training data leak prevention)
+
+  - FR8: Feedback UI
+    description: Rich visual feedback in VS Code chat panel
+    features:
+      - Visual risk bar (🟥🟥🟥⬜⬜⬜)
+      - Grouped findings by category (🔑 Secrets, 👤 PII, 💉 Injection, 🔓 Jailbreak, ☠️ Toxicity)
+      - Severity icons per finding (🔴 CRITICAL, 🟠 HIGH, 🟡 MEDIUM, 🟢 LOW)
+      - Masked detected values (AKIA••••CDEF, jo••@example.com, 123-••-••••)
+      - Before→after redaction display (🔴 ~~masked~~ → 🟢 replacement)
+      - Confidence percentages per finding
+      - Scan report tables with /scan command
+      - Status dashboard with /status command
+      - Hallucination analysis with color-coded sentence badges
+    policy: Always shows what was detected, always masks and sends — never blocks
+
+  - FR9: Backend Integration
+    description: Two HTTP endpoints on self-hosted Guardrails AI server
+    endpoints:
+      - POST /guards/gradril_input_guard/validate (input validation)
+      - POST /guards/gradril_output_guard/validate (output validation)
+    server: Guardrails AI (open source, Apache 2.0, self-hosted on localhost:8000)
+    no_external_api: Zero runtime calls to external cloud APIs
+
+  - FR10: Logging & Audit
+    description: Structured audit logging for compliance
+    storage: .gradril/audit.jsonl (local file)
+    security: SHA-256 hashed entries — never stores raw prompt text
+    fields: timestamp, decision, risk_score, findings_count, latency_ms
+
+  - FR11: Status Bar Indicator
+    description: Real-time guard status in VS Code status bar
+    states: enabled (shield icon), disabled, backend online/offline
+
+  - FR12: Slash Commands
+    description: Chat-integrated utility commands
+    commands:
+      - /scan — Dry-run security scan with full report
+      - /status — Guard status, session stats, backend health
+      - /config — Opens VS Code settings for Gradril
+
+non_functional_requirements:
+
+  - NFR1: Latency — Local validation < 50ms, backend round-trip < 2000ms (configurable timeout)
+  - NFR2: Zero runtime deps — Extension uses only Node.js built-in modules (http, https, crypto, fs, path)
+  - NFR3: Graceful degradation — Falls back to local-only when backend is unavailable
+  - NFR4: Secure data handling — PII/secrets masked in display and audit; never logged in raw form
+  - NFR5: Extensible validator system — Validators are modular; new detectors can be added independently
+  - NFR6: Self-hosted backend — Guardrails AI runs fully locally; no data leaves the network
+  - NFR7: Configurable thresholds — All risk thresholds, timeouts, and validators are user-configurable
+  - NFR8: VS Code compatibility — Requires VS Code ^1.90.0, Node.js 18.x or 20.x
+
+security_requirements:
+
+  - Prevent leakage of secrets and API keys (local + backend detection, typed masking)
+  - Prevent prompt injection and jailbreak attacks (5 local patterns + ML backend)
+  - Mask sensitive user input in all UI display (maskDetectedValue with type-specific masking)
+  - Hash all audit log entries with SHA-256 (never store raw prompts)
+  - Self-hosted backend — no data sent to external cloud APIs
+  - Output guard prevents LLM from leaking PII from training data
+
+success_metrics:
+
+  - '% of unsafe prompts blocked' — measured via audit log
+  - '% of prompts sanitized' — tracked in session statistics
+  - 'latency of validation' — recorded per decision (latencyMs)
+  - 'false positive rate' — tunable via threshold settings
+  - 'hallucination detection rate' — sentence-level grounded/uncertain/hallucinated scoring
+  - 'backend availability' — health check tracked in /status
