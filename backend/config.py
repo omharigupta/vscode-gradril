@@ -20,7 +20,6 @@
 
 from guardrails import Guard
 from guardrails.hub import (
-    DetectPII,
     ToxicLanguage,
     DetectJailbreak,
     SecretsPresent,
@@ -28,6 +27,8 @@ from guardrails.hub import (
     GroundedAIHallucination,
     BiasCheck,
 )
+# DetectPII imported directly (post-install script has a known Pydantic v2 + spaCy bug)
+from guardrails_grhub_detect_pii import DetectPII
 
 # ─── Input Guard Definition ─────────────────────────────────────────────────
 # This guard is applied to user prompts (input validation).
@@ -86,8 +87,9 @@ gradril_output_guard = Guard(
 
 # Hallucination Detection (GroundedAI — ML-based)
 # on_fail='noop' → flag but don't block (let extension render color-coded result)
+# quant=True uses quantized model (smaller, faster, less memory)
 gradril_output_guard.use(
-    GroundedAIHallucination(on_fail="noop"),
+    GroundedAIHallucination(quant=True, on_fail="noop"),
     on="messages",
 )
 
