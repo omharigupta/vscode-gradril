@@ -1,11 +1,11 @@
-# Gradril — Guardrails AI Backend Configuration
+# Gradril — Guardrails AI Guard Definitions
 # 
-# This file defines the input guard used by the Gradril VS Code extension.
-# The guard validates user prompts BEFORE they are sent to an LLM.
+# This file defines the input/output guards used by the Gradril VS Code extension.
+# Guards are imported by server.py (FastAPI + Pydantic backend).
 #
 # Usage:
-#   pip install "guardrails-ai[api]"
-#   guardrails configure          # Set your API key from https://guardrailsai.com/hub/keys
+#   pip install guardrails-ai fastapi uvicorn
+#   guardrails configure
 #   guardrails hub install hub://guardrails/detect_pii
 #   guardrails hub install hub://guardrails/toxic_language
 #   guardrails hub install hub://guardrails/detect_jailbreak
@@ -13,7 +13,7 @@
 #   guardrails hub install hub://guardrails/unusual_prompt
 #   guardrails hub install hub://groundedai/grounded_ai_hallucination
 #   guardrails hub install hub://guardrails/bias_check
-#   guardrails start --config config.py
+#   uvicorn server:app --host 0.0.0.0 --port 8000
 #
 # Server runs at http://localhost:8000
 # API docs at http://localhost:8000/docs

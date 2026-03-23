@@ -260,6 +260,18 @@ Applied to LLM responses after generation:
 | ToxicLanguage | ML classifier | `on_fail=exception` — block toxic output |
 | DetectPII | Presidio ML | `on_fail=fix` — redact training data leaks |
 
+## ML Models & Engines
+
+| Validator | ML Model / Engine | Purpose |
+|-----------|-------------------|---------|
+| DetectPII | Microsoft Presidio (rule-based NER + spaCy `en_core_web_lg`) | Detect & redact PII (names, emails, SSNs, etc.) |
+| ToxicLanguage | `unitary/toxic-bert` (HuggingFace) | Classify toxic/offensive language |
+| DetectJailbreak | `GuardrailsAI/prompt-saturation-attack-detector` (HuggingFace) | Detect prompt injection & jailbreak attempts |
+| SecretsPresent | Regex-based patterns (no ML model) | Detect API keys, tokens, passwords |
+| UnusualPrompt | Statistical analysis (no large ML model) | Flag unusual/suspicious prompt patterns |
+| GroundedAIHallucination | `GroundedAI` model (HuggingFace) | Detect hallucinated output |
+| BiasCheck | `d4data/bias-detection-model` (HuggingFace) | Detect biased language |
+
 ## Contributing
 
 1. Fork the repository

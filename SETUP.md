@@ -9,10 +9,11 @@ Complete guide to install, run, and develop the Gradril Copilot Prompt Guardrail
 1. [Quick Install (VSIX)](#1-quick-install-vsix)
 2. [Build from Source](#2-build-from-source)
 3. [Run as Custom Connector](#3-run-as-custom-connector)
-4. [Backend Setup (Optional)](#4-backend-setup-optional)
-5. [How It Works](#5-how-it-works)
-6. [Configuration](#6-configuration)
-7. [Troubleshooting](#7-troubleshooting)
+4. [Backend with Docker (Recommended)](#4-backend-with-docker-recommended)
+5. [Backend Manual Setup](#5-backend-manual-setup)
+6. [How It Works](#6-how-it-works)
+7. [Configuration](#7-configuration)
+8. [Troubleshooting](#8-troubleshooting)
 
 ---
 
@@ -159,9 +160,99 @@ The status bar shows real-time guard status:
 
 ---
 
-## 4. Backend Setup (Optional)
+## 4. Backend with Docker (Recommended)
 
-The backend provides **ML-powered deep validation** using Guardrails AI. It's fully **open source** (Apache 2.0) and **self-hosted** — no data leaves your network.
+The easiest way to run the Guardrails AI backend. One command, everything included.
+
+### Prerequisites
+
+- **Docker** installed and running ([Get Docker](https://docs.docker.com/get-docker/))
+- **Docker Compose** (included with Docker Desktop)
+
+### Get a Guardrails Hub Token
+
+A free token is required to download the Hub validators during the Docker build.
+
+1. Sign up at [https://guardrailsai.com](https://guardrailsai.com)
+2. Go to [https://guardrailsai.com/hub/keys](https://guardrailsai.com/hub/keys)
+3. Copy your API token
+
+### Quick Start
+
+```bash
+# From the project root directory
+
+# Set your Guardrails Hub token
+export GUARDRAILS_TOKEN=your_token_here
+
+# Option 1: Docker Compose (recommended)
+docker compose up -d --build
+
+# Option 2: Build and run manually
+cd backend
+docker build --build-arg GUARDRAILS_TOKEN=$GUARDRAILS_TOKEN -t gradril-backend .
+docker run -d -p 8000:8000 --name gradril-backend gradril-backend
+```
+
+> **Note:** The token is only needed once during `docker build` to download validators. It is NOT needed at runtime.
+
+That's it! The backend is now running at `http://localhost:8000`.
+
+### Verify it's running
+
+```bash
+# Health check
+curl http://localhost:8000/health
+
+# Or open in browser
+# http://localhost:8000/docs
+```
+
+### Docker Commands
+
+```bash
+# Start the backend
+docker compose up -d
+
+# Stop the backend
+docker compose down
+
+# View logs
+docker compose logs -f gradril-backend
+
+# Restart
+docker compose restart
+
+# Rebuild (after updating config.py)
+docker compose up -d --build
+```
+
+### What's inside the Docker image
+
+The Dockerfile automatically:
+1. Installs Python 3.11 + Guardrails AI
+2. Downloads all 7 Hub validators (PII, toxicity, jailbreak, secrets, unusual prompt, hallucination, bias)
+3. Copies `config.py` with input guard + output guard
+4. Starts the server on port 8000
+5. Includes health checks every 30s
+
+### Docker image details
+
+| Property | Value |
+|---|---|
+| Base image | `python:3.11-slim` |
+| Port | `8000` |
+| Health check | `GET /health` every 30s |
+| Restart policy | `unless-stopped` |
+| API docs | `http://localhost:8000/docs` |
+
+> **Note:** First build takes 3-5 minutes (downloads ML models). Subsequent starts are instant.
+
+---
+
+## 5. Backend Manual Setup
+
+If you prefer running without Docker.
 
 > **Without backend:** Gradril still works using 5 local regex validators. The backend adds ML-based detection for better accuracy.
 
@@ -249,7 +340,7 @@ Or in chat:
 
 ---
 
-## 5. How It Works
+## 6. How It Works
 
 ### Extension Architecture
 
@@ -298,7 +389,7 @@ Risk: 85% 🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥�
 
 ---
 
-## 6. Configuration
+## 7. Configuration
 
 Open settings: `Ctrl+Shift+P` → "Preferences: Open Settings" → search `gradril`
 
@@ -315,7 +406,7 @@ Open settings: `Ctrl+Shift+P` → "Preferences: Open Settings" → search `gradr
 
 ---
 
-## 7. Troubleshooting
+## 8. Troubleshooting
 
 ### Extension not showing in Chat
 
