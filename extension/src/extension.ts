@@ -181,6 +181,32 @@ export async function activate(context: vscode.ExtensionContext) {
     });
 
     logger.info('Gradril activation complete.');
+
+    // 14. Auto-start: show notification and open chat with @gradril
+    // Once the user sends the first message via @gradril, isSticky keeps it
+    // selected for all subsequent messages — acting like an auto-connector.
+    const isFirstRun = !context.globalState.get<boolean>('gradril.welcomed');
+    if (isFirstRun) {
+        const action = await vscode.window.showInformationMessage(
+            '🛡️ Gradril is now active! All your Copilot prompts will be guarded for PII, secrets, injections & more.',
+            'Open Gradril Chat',
+            'Dismiss'
+        );
+        if (action === 'Open Gradril Chat') {
+            await vscode.commands.executeCommand('workbench.action.chat.open', { query: '@gradril ' });
+        }
+        await context.globalState.update('gradril.welcomed', true);
+    } else {
+        // Returning user — silently open chat with @gradril pre-selected
+        // so the guard is always active without any extra steps
+        setTimeout(async () => {
+            try {
+                await vscode.commands.executeCommand('workbench.action.chat.open', { query: '@gradril ' });
+            } catch {
+                // Chat panel may already be open or command unavailable — silently ignore
+            }
+        }, 2000);
+    }
 }
 
 export function deactivate() {
