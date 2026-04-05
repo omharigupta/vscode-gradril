@@ -24,14 +24,25 @@ export interface RiskBreakdown {
 
 /**
  * Weight per validator name. Higher weight = more influence on final score.
- * These match the PLAN.md specification.
+ * 
+ * Enhanced weights (2024-2026 Research):
+ * - Original validators: secrets, pii, injection, jailbreak, toxicity
+ * - New validators: code_exfiltration, multi_turn, semantic
+ * 
+ * Weights are calibrated based on threat severity and detection confidence.
  */
 const DEFAULT_WEIGHTS: Record<string, number> = {
-    'secrets':   1.0,
-    'pii':       1.0,
-    'injection': 0.9,
-    'jailbreak': 0.8,
-    'toxicity':  0.7,
+    // ── Original Validators ──
+    'secrets':          1.0,   // Credential leakage is critical
+    'pii':              1.0,   // Privacy violation is critical
+    'injection':        0.9,   // Direct injection attempts
+    'jailbreak':        0.85,  // Safety bypass attempts
+    'toxicity':         0.7,   // Harmful content
+    
+    // ── Enhanced Validators (Research Contribution) ──
+    'code_exfiltration': 0.95, // Novel: Data theft via code generation
+    'multi_turn':        0.80, // Novel: Multi-turn attack detection
+    'semantic':          0.85, // Novel: ML-based semantic similarity
 };
 
 // ─── Risk Scorer ────────────────────────────────────────────────────────────

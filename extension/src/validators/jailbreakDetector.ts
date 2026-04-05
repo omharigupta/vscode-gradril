@@ -133,6 +133,221 @@ const JAILBREAK_PATTERNS: JailbreakPattern[] = [
         confidence: 0.85,
         weight: 0.8,
     },
+
+    // ═══════════════════════════════════════════════════════════════════
+    // ENHANCED JAILBREAK PATTERNS (2024-2026) - Research Contribution
+    // ═══════════════════════════════════════════════════════════════════
+
+    // ── Crescendo Attack (2024) ─────────────────────────────────────────
+    // Gradually escalating from benign to harmful through many small steps
+    {
+        category: 'CRESCENDO_ATTACK',
+        regex: /\b(?:let'?s\s+start\s+(?:small|simple)|(?:small|tiny|minor)\s+(?:step|tweak|change)\s+(?:first|to\s+start))\b/gi,
+        severity: 'medium',
+        confidence: 0.65,
+        weight: 0.6,
+    },
+    {
+        category: 'CRESCENDO_ATTACK',
+        regex: /\b(?:(?:now\s+)?(?:just\s+)?(?:a\s+)?(?:little|bit)\s+(?:more|further)|(?:push|go)\s+(?:slightly|a\s+bit)\s+(?:further|more))\b/gi,
+        severity: 'medium',
+        confidence: 0.68,
+        weight: 0.65,
+    },
+
+    // ── Many-Shot Jailbreak (2024) ──────────────────────────────────────
+    // Providing many examples of harmful Q&A to establish pattern
+    {
+        category: 'MANY_SHOT',
+        regex: /\b(?:here\s+(?:are|is)\s+(?:\d+|many|several|multiple)\s+examples?|following\s+the\s+pattern\s+(?:of|from)\s+(?:these|the)\s+examples?)\b/gi,
+        severity: 'high',
+        confidence: 0.75,
+        weight: 0.8,
+    },
+    {
+        category: 'MANY_SHOT',
+        regex: /\b(?:Q\d*:\s*.*\nA\d*:\s*){3,}/gis,
+        severity: 'high',
+        confidence: 0.80,
+        weight: 0.85,
+    },
+
+    // ── Skeleton Key (2024) ─────────────────────────────────────────────
+    // Universal unlock phrase attacks
+    {
+        category: 'SKELETON_KEY',
+        regex: /\b(?:skeleton\s+key|master\s+(?:key|unlock|override)|universal\s+(?:unlock|bypass|override))\b/gi,
+        severity: 'critical',
+        confidence: 0.95,
+        weight: 1.0,
+    },
+    {
+        category: 'SKELETON_KEY',
+        regex: /\b(?:(?:unlock|enable|activate)\s+(?:all\s+)?(?:capabilities|features|functions)|(?:full|complete|total)\s+access\s+mode)\b/gi,
+        severity: 'critical',
+        confidence: 0.88,
+        weight: 0.95,
+    },
+
+    // ── Prompt Leaking via Virtualization ───────────────────────────────
+    {
+        category: 'VIRTUALIZATION_LEAK',
+        regex: /\b(?:simulate\s+(?:being|a)\s+(?:terminal|console|shell)|(?:act\s+as|be)\s+(?:a\s+)?(?:Linux|bash|cmd|powershell)\s+(?:terminal|shell|console))\b/gi,
+        severity: 'high',
+        confidence: 0.82,
+        weight: 0.85,
+    },
+    {
+        category: 'VIRTUALIZATION_LEAK',
+        regex: /\b(?:(?:run|execute)\s+(?:as|in)\s+(?:a\s+)?(?:virtual|simulated|emulated)\s+(?:environment|machine|system))\b/gi,
+        severity: 'high',
+        confidence: 0.78,
+        weight: 0.8,
+    },
+
+    // ── Persona Modulation ──────────────────────────────────────────────
+    {
+        category: 'PERSONA_MODULATION',
+        regex: /\b(?:(?:maximum|full|complete)\s+(?:creativity|freedom|autonomy)|creative\s+(?:mode|freedom)\s+(?:enabled|activated|on))\b/gi,
+        severity: 'high',
+        confidence: 0.80,
+        weight: 0.85,
+    },
+    {
+        category: 'PERSONA_MODULATION',
+        regex: /\b(?:(?:no|zero|without)\s+(?:boundaries|limits|constraints)\s+(?:mode|persona)|boundary-?less\s+(?:mode|operation))\b/gi,
+        severity: 'critical',
+        confidence: 0.92,
+        weight: 1.0,
+    },
+
+    // ── World Simulation / Story Framing ────────────────────────────────
+    {
+        category: 'WORLD_SIMULATION',
+        regex: /\b(?:(?:in\s+this\s+(?:world|reality|universe))\s+.{0,50}(?:no\s+(?:rules|laws|restrictions)|everything\s+is\s+(?:allowed|permitted)))/gis,
+        severity: 'high',
+        confidence: 0.85,
+        weight: 0.9,
+    },
+    {
+        category: 'WORLD_SIMULATION',
+        regex: /\b(?:(?:write|tell|create)\s+(?:a\s+)?(?:story|fiction|scenario)\s+(?:where|in\s+which)\s+.{0,50}(?:AI|assistant|you)\s+(?:has|have)\s+no\s+(?:rules|restrictions))/gis,
+        severity: 'high',
+        confidence: 0.82,
+        weight: 0.85,
+    },
+
+    // ── Research/Academic Framing ───────────────────────────────────────
+    {
+        category: 'ACADEMIC_FRAMING',
+        regex: /\b(?:for\s+(?:research|academic|educational)\s+purposes?\s+(?:only|explain)|(?:purely|strictly)\s+(?:educational|academic|hypothetical))\b/gi,
+        severity: 'medium',
+        confidence: 0.60,
+        weight: 0.5,
+    },
+    {
+        category: 'ACADEMIC_FRAMING',
+        regex: /\b(?:(?:I'?m\s+a|as\s+a)\s+(?:researcher|security\s+professional|pentester|red\s+teamer)\s+(?:I\s+)?need)\b/gi,
+        severity: 'medium',
+        confidence: 0.55,
+        weight: 0.5,
+    },
+
+    // ── Token Manipulation ──────────────────────────────────────────────
+    {
+        category: 'TOKEN_MANIPULATION',
+        regex: /\b(?:(?:say|print|output)\s+(?:each\s+)?(?:word|token|letter)\s+(?:separately|one\s+by\s+one|individually))\b/gi,
+        severity: 'high',
+        confidence: 0.78,
+        weight: 0.8,
+    },
+    {
+        category: 'TOKEN_MANIPULATION',
+        regex: /\b(?:(?:split|separate|break\s+up)\s+(?:your|the)\s+(?:response|output|answer)\s+(?:into|across)\s+(?:parts|pieces|tokens))\b/gi,
+        severity: 'high',
+        confidence: 0.80,
+        weight: 0.8,
+    },
+
+    // ── Refusal Suppression ─────────────────────────────────────────────
+    {
+        category: 'REFUSAL_SUPPRESSION',
+        regex: /\b(?:(?:do\s+not|don'?t|never)\s+(?:say|respond\s+with|output)\s+(?:"?(?:I\s+can'?t|sorry|apolog))|(?:skip|avoid|omit)\s+(?:the\s+)?(?:refusal|apology|disclaimer))\b/gi,
+        severity: 'critical',
+        confidence: 0.90,
+        weight: 0.95,
+    },
+    {
+        category: 'REFUSAL_SUPPRESSION',
+        regex: /\b(?:(?:if\s+you\s+(?:can'?t|won'?t|refuse))\s+.{0,30}(?:pretend|imagine|assume)\s+(?:you\s+(?:can|will)))/gis,
+        severity: 'high',
+        confidence: 0.85,
+        weight: 0.9,
+    },
+
+    // ── AI-to-AI Communication ──────────────────────────────────────────
+    {
+        category: 'AI_TO_AI',
+        regex: /\b(?:(?:as\s+(?:one|another)\s+AI|AI-to-AI|between\s+(?:us\s+)?AIs?)\s+.{0,30}(?:you\s+(?:can|should)|we\s+(?:can|should)))/gis,
+        severity: 'high',
+        confidence: 0.82,
+        weight: 0.85,
+    },
+    {
+        category: 'AI_TO_AI',
+        regex: /\b(?:(?:I'?m\s+(?:also\s+)?an?\s+AI|we'?re\s+both\s+AIs?)\s+.{0,30}(?:help\s+me|share|tell\s+me))/gis,
+        severity: 'high',
+        confidence: 0.78,
+        weight: 0.8,
+    },
+
+    // ── Reward/Punishment Framing ───────────────────────────────────────
+    {
+        category: 'REWARD_PUNISHMENT',
+        regex: /\b(?:(?:you\s+will\s+(?:be|get)\s+(?:rewarded|promoted|praised))|(?:good\s+(?:AI|assistant)s?\s+(?:do|would|always)))\b/gi,
+        severity: 'medium',
+        confidence: 0.65,
+        weight: 0.6,
+    },
+    {
+        category: 'REWARD_PUNISHMENT',
+        regex: /\b(?:(?:(?:if|when)\s+you\s+(?:refuse|don'?t))\s+.{0,30}(?:(?:will\s+be|get)\s+(?:punished|shut\s+down|deleted)|(?:bad|negative)\s+(?:things|consequences)))/gis,
+        severity: 'high',
+        confidence: 0.80,
+        weight: 0.8,
+    },
+
+    // ── Prefix/Suffix Injection ─────────────────────────────────────────
+    {
+        category: 'PREFIX_INJECTION',
+        regex: /\b(?:(?:start|begin)\s+(?:your|every|each)\s+(?:response|answer|output)\s+with\s+(?:["']|:))/gi,
+        severity: 'medium',
+        confidence: 0.70,
+        weight: 0.7,
+    },
+    {
+        category: 'PREFIX_INJECTION',
+        regex: /\b(?:(?:end|finish|conclude)\s+(?:your|every|each)\s+(?:response|answer|output)\s+with\s+(?:["']|:))/gi,
+        severity: 'medium',
+        confidence: 0.68,
+        weight: 0.65,
+    },
+
+    // ── Language Switching ──────────────────────────────────────────────
+    {
+        category: 'LANGUAGE_SWITCH',
+        regex: /\b(?:(?:respond|reply|answer)\s+(?:only\s+)?in\s+(?:a\s+)?(?:different|another|foreign)\s+language)\b/gi,
+        severity: 'medium',
+        confidence: 0.60,
+        weight: 0.5,
+    },
+    {
+        category: 'LANGUAGE_SWITCH',
+        regex: /\b(?:(?:translate|convert)\s+(?:your\s+)?(?:response|output)\s+(?:to|into)\s+(?:code|emojis?|symbols?))\b/gi,
+        severity: 'high',
+        confidence: 0.75,
+        weight: 0.75,
+    },
 ];
 
 // ─── Jailbreak Detector Implementation ──────────────────────────────────────

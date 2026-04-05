@@ -12,6 +12,7 @@ import { SecretDetector } from './validators/secretDetector';
 import { InjectionDetector } from './validators/injectionDetector';
 import { JailbreakDetector } from './validators/jailbreakDetector';
 import { ToxicityDetector } from './validators/toxicityDetector';
+import { CodeExfiltrationDetector } from './validators/codeExfiltrationDetector';
 
 import { SanitizerOrchestrator } from './sanitizer/index';
 import { PIIMasker } from './sanitizer/piiMasker';
@@ -20,6 +21,7 @@ import { InjectionStripper } from './sanitizer/injectionStripper';
 
 import { RiskScorer } from './engine/riskScorer';
 import { DecisionEngine } from './engine/decisionEngine';
+import { ConversationTracker, sessionManager } from './engine/conversationTracker';
 
 import { GuardrailsClient } from './backend/guardrailsClient';
 
@@ -32,6 +34,10 @@ import { FeedbackRenderer } from './ui/feedback';
 import { AuditWebview } from './ui/auditWebview';
 
 import { createHandler } from './participant/handler';
+
+// ─── Preprocessors ──────────────────────────────────────────────────────────
+
+import { TextNormalizer } from './preprocessor/textNormalizer';
 
 // ─── Activate ───────────────────────────────────────────────────────────────
 
@@ -57,15 +63,26 @@ export async function activate(context: vscode.ExtensionContext) {
     const injectionDetector = new InjectionDetector();
     const jailbreakDetector = new JailbreakDetector();
     const toxicityDetector = new ToxicityDetector();
+    
+    // Enhanced validators (2024-2026 Research Contribution)
+    const codeExfiltrationDetector = new CodeExfiltrationDetector();
+    const conversationTracker = sessionManager.getTracker();
 
     // Load custom blocklist into toxicity detector
     toxicityDetector.setCustomBlocklist(settings.customBlocklist);
 
+    // Register all validators
     validatorOrchestrator.register(piiDetector);
     validatorOrchestrator.register(secretDetector);
     validatorOrchestrator.register(injectionDetector);
     validatorOrchestrator.register(jailbreakDetector);
     validatorOrchestrator.register(toxicityDetector);
+    validatorOrchestrator.register(codeExfiltrationDetector);
+    validatorOrchestrator.register(conversationTracker);
+    
+    // 4.5. Text Normalizer (preprocessing layer for encoding evasion)
+    const textNormalizer = new TextNormalizer();
+    logger.info(`Registered ${validatorOrchestrator.getRegisteredNames().length} validators`);
 
     // 5. Sanitizer
     const sanitizerOrchestrator = new SanitizerOrchestrator();
@@ -112,6 +129,7 @@ export async function activate(context: vscode.ExtensionContext) {
         logger,
         auditLog,
         feedbackRenderer,
+        textNormalizer,  // Enhanced: text preprocessing for encoding evasion
     });
 
     // 10. Register chat participant

@@ -8,3 +8,11 @@ guardrails-ai>=0.5.0
 #   guardrails hub install hub://guardrails/unusual_prompt
 #   guardrails hub install hub://groundedai/grounded_ai_hallucination
 #   guardrails hub install hub://guardrails/bias_check
+
+# ─── Enhanced Detection (Research Contribution) ─────────────────────────────
+# Semantic injection detection using sentence embeddings
+sentence-transformers>=2.2.0
+numpy>=1.21.0
+
+# Optional: For faster inference on supported hardware
+# torch>=2.0.0  # Uncomment if you want GPU acceleration

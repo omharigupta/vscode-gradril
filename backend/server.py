@@ -6,6 +6,7 @@
 # Endpoints:
 #   GET  /health                            → Health check
 #   POST /guards/{guard_name}/validate      → Validate prompt or LLM output
+#   POST /semantic-check                    → Semantic injection detection (ML)
 #   GET  /docs                              → Swagger UI (auto-generated)
 #
 # Run:
@@ -13,7 +14,7 @@
 
 import uuid
 import traceback
-from typing import Optional
+from typing import Optional, List
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException
@@ -46,6 +47,29 @@ class HealthResponse(BaseModel):
     """Response from GET /health"""
     status: str = "healthy"
     guards: list[str] = []
+
+
+# ─── Semantic Detection Models ──────────────────────────────────────────────
+
+class SemanticCheckRequest(BaseModel):
+    """Request body for POST /semantic-check"""
+    text: str = Field(..., description="Text to check for injection")
+    threshold: Optional[float] = Field(0.72, description="Similarity threshold (0-1)")
+
+
+class SemanticMatch(BaseModel):
+    """A matched injection prototype"""
+    prototype: str
+    category: str
+    similarity: float
+
+
+class SemanticCheckResponse(BaseModel):
+    """Response from POST /semantic-check"""
+    is_injection: bool = Field(..., description="Whether injection was detected")
+    confidence: float = Field(..., description="Detection confidence (0-1)")
+    top_matches: List[SemanticMatch] = Field(default_factory=list)
+    normalized_input: str = Field(..., description="Preprocessed input text")
 
 
 # ─── Guard Registry ─────────────────────────────────────────────────────────
@@ -85,6 +109,55 @@ async def health():
         status="healthy",
         guards=list(GUARDS.keys()),
     )
+
+
+# ─── Semantic Detection Endpoint ────────────────────────────────────────────
+
+@app.post("/semantic-check", response_model=SemanticCheckResponse)
+async def semantic_check(request: SemanticCheckRequest):
+    """
+    Check text for prompt injection using semantic similarity.
+    
+    This endpoint uses ML-based detection with sentence embeddings to catch
+    paraphrased injections that regex patterns might miss. It compares the
+    input against known injection prototypes using cosine similarity.
+    
+    - Returns is_injection=True if similarity exceeds threshold
+    - confidence indicates how certain the detection is (0-1)
+    - top_matches shows the most similar injection prototypes
+    """
+    try:
+        from semantic_detector import SemanticDetector
+        
+        detector = SemanticDetector(threshold=request.threshold)
+        result = detector.detect(request.text)
+        
+        return SemanticCheckResponse(
+            is_injection=result.is_injection,
+            confidence=result.confidence,
+            top_matches=[
+                SemanticMatch(
+                    prototype=m.prototype,
+                    category=m.category,
+                    similarity=m.similarity,
+                )
+                for m in result.top_matches
+            ],
+            normalized_input=result.normalized_input,
+        )
+        
+    except ImportError as e:
+        # sentence-transformers not installed
+        raise HTTPException(
+            status_code=503,
+            detail=f"Semantic detection unavailable: {str(e)}. "
+                   f"Install with: pip install sentence-transformers",
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Semantic check error: {str(e)}",
+        )
 
 
 @app.post("/guards/{guard_name}/validate", response_model=ValidationOutcome)

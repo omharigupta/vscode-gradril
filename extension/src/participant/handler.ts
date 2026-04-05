@@ -1,5 +1,5 @@
 // Gradril — Chat Request Handler
-// Core interception pipeline: validate → sanitize → decide → act.
+// Core interception pipeline: normalize → validate → sanitize → decide → act.
 // This is the main handler for the @gradril chat participant.
 
 import * as vscode from 'vscode';
@@ -13,6 +13,7 @@ import { GradrilSettings } from '../config/settings';
 import { OutputChannelLogger } from '../logging/outputChannel';
 import { AuditLog } from '../logging/auditLog';
 import { FeedbackRenderer } from '../ui/feedback';
+import { TextNormalizer, NormalizationResult } from '../preprocessor/textNormalizer';
 
 // ─── Handler Dependencies ───────────────────────────────────────────────────
 
@@ -26,6 +27,7 @@ export interface HandlerDependencies {
     logger: OutputChannelLogger;
     auditLog: AuditLog;
     feedbackRenderer: FeedbackRenderer;
+    textNormalizer?: TextNormalizer;  // Optional: text preprocessing
 }
 
 // ─── Handler ────────────────────────────────────────────────────────────────
@@ -66,14 +68,53 @@ export function createHandler(deps: HandlerDependencies): vscode.ChatRequestHand
 
         stream.progress('Scanning prompt for security risks...');
 
-        // 1. Run local validators in parallel
+        // 0. Preprocess: Normalize text to defeat encoding evasion attacks
+        let normalizedPrompt = prompt;
+        let normalizationResult: NormalizationResult | undefined;
+        
+        if (deps.textNormalizer) {
+            normalizationResult = deps.textNormalizer.normalize(prompt);
+            normalizedPrompt = normalizationResult.normalized;
+            
+            // Log obfuscation detection
+            if (normalizationResult.wasTransformed) {
+                deps.logger.info(
+                    `Text normalization applied: ${normalizationResult.transformations.join(', ')} ` +
+                    `(obfuscation score: ${normalizationResult.obfuscationScore.toFixed(2)})`
+                );
+            }
+        }
+
+        // 1. Run local validators in parallel (on normalized text)
         const enabledList = deps.settings.enabledValidators;
         let localResults: ValidatorResult[];
         try {
-            localResults = await deps.validatorOrchestrator.runAll(prompt, enabledList);
+            localResults = await deps.validatorOrchestrator.runAll(normalizedPrompt, enabledList);
         } catch (err) {
             deps.logger.error(`Validator error: ${err}`);
             localResults = [];
+        }
+        
+        // Add obfuscation finding if significant obfuscation was detected
+        if (normalizationResult && normalizationResult.obfuscationScore > 0.15) {
+            const obfuscationFinding: Finding = {
+                type: 'OBFUSCATION_DETECTED',
+                match: `Detected encoding evasion: ${normalizationResult.transformations.join(', ')}`,
+                position: 0,
+                length: prompt.length,
+                confidence: Math.min(normalizationResult.obfuscationScore * 2, 0.95),
+                severity: normalizationResult.obfuscationScore > 0.3 ? 'high' : 'medium',
+                validator: 'normalizer',
+            };
+            
+            // Create a synthetic result for the obfuscation detection
+            localResults.push({
+                validatorName: 'normalizer',
+                detected: true,
+                severity: obfuscationFinding.severity,
+                findings: [obfuscationFinding],
+                score: normalizationResult.obfuscationScore,
+            });
         }
 
         if (token.isCancellationRequested) { return {}; }
